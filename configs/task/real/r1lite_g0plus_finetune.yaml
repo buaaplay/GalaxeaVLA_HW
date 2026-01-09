@@ -1,9 +1,32 @@
 # @package _global_
 
 defaults:
-  - override /data: r1lite/arm_torso_velocity_chassis
+  - override /data: r1lite/arm #_torso_velocity_chassis
   - override /model: vla/g0plus
+
+model:
+  pretrained_ckpt: /root/ckpts/G0Plus_3B_base/checkpoints/model_state_dict.pt
+  batch_size: 1
+  # LoRA configuration (uncomment to enable LoRA fine-tuning)
+  # use_lora: True
+  # lora:
+  #   r: 8
+  #   alpha: 16
+  #   dropout: 0.1
+  #   bias: "none"
+  #   target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  #   apply_to_vlm: True
+  #   apply_to_action: False
+  model_arch:
+    pretrained_model_path: /root/ckpts/paligemma-3b-pt-224
+  processor:
+    tokenizer_params: 
+      pretrained_model_name_or_path: /root/ckpts/paligemma-3b-pt-224
 
 data:
   dataset_dirs: 
-    - null
+    - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items16_Evenly_Distributed_Round_13_20251022_018
+    - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items57_Evenly_Distributed_Round_13_20251024_018
+
+logger:
+  workspace: Oshwiciqwq

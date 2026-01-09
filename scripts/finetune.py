@@ -21,6 +21,12 @@ try:
 except ImportError:
     bnb = None
 
+try:
+    from peft import LoraConfig, get_peft_model, TaskType
+    PEFT_AVAILABLE = True
+except ImportError:
+    PEFT_AVAILABLE = False
+
 from accelerate import Accelerator, InitProcessGroupKwargs
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration
@@ -220,6 +226,79 @@ def finetune(cfg: DictConfig):
         logger.info(f"Loading checkpoint from {checkpoint}")
         state_dict = torch.load(checkpoint, weights_only=True, map_location='cpu')
         model = load_state_dict_safely(model, state_dict["model_state_dict"], extra_prefixes=["normalizer."])
+
+    # Apply LoRA if enabled
+    use_lora = cfg.model.get("use_lora", False)
+    if use_lora:
+        if not PEFT_AVAILABLE:
+            raise ImportError("peft is required for LoRA but not installed. Install it with: pip install peft")
+        
+        lora_config = cfg.model.get("lora", {})
+        logger.info("Applying LoRA to model...")
+        logger.info(f"LoRA config: {lora_config}")
+        
+        # Get the underlying model (GalaxeaZero) from the policy
+        if hasattr(model, 'model'):
+            base_model = model.model
+        else:
+            base_model = model
+        
+        # Apply LoRA to different components based on config
+        lora_target_modules = lora_config.get("target_modules", ["q_proj", "v_proj", "k_proj", "o_proj"])
+        lora_r = lora_config.get("r", 8)
+        lora_alpha = lora_config.get("alpha", 16)
+        lora_dropout = lora_config.get("dropout", 0.1)
+        lora_bias = lora_config.get("bias", "none")
+        lora_task_type = lora_config.get("task_type", "FEATURE_EXTRACTION")
+        
+        # Determine which parts of the model to apply LoRA to
+        apply_to_vlm = lora_config.get("apply_to_vlm", True)
+        apply_to_vision = lora_config.get("apply_to_vision", False)
+        apply_to_projector = lora_config.get("apply_to_projector", False)
+        apply_to_action = lora_config.get("apply_to_action", False)
+        
+        if apply_to_vlm and hasattr(base_model, 'joint_model') and hasattr(base_model.joint_model, 'mixtures'):
+            # Apply LoRA to VLM (language model) part
+            vlm_mixture = base_model.joint_model.mixtures.get("vlm")
+            if vlm_mixture is not None:
+                peft_config = LoraConfig(
+                    task_type=TaskType.FEATURE_EXTRACTION,
+                    r=lora_r,
+                    lora_alpha=lora_alpha,
+                    lora_dropout=lora_dropout,
+                    bias=lora_bias,
+                    target_modules=lora_target_modules,
+                )
+                base_model.joint_model.mixtures["vlm"] = get_peft_model(vlm_mixture, peft_config)
+                logger.info(f"Applied LoRA to VLM mixture with r={lora_r}, alpha={lora_alpha}")
+        
+        if apply_to_action and hasattr(base_model, 'joint_model') and hasattr(base_model.joint_model, 'mixtures'):
+            # Apply LoRA to action expert part
+            action_mixture = base_model.joint_model.mixtures.get("action")
+            if action_mixture is not None:
+                peft_config = LoraConfig(
+                    task_type=TaskType.FEATURE_EXTRACTION,
+                    r=lora_r,
+                    lora_alpha=lora_alpha,
+                    lora_dropout=lora_dropout,
+                    bias=lora_bias,
+                    target_modules=lora_target_modules,
+                )
+                base_model.joint_model.mixtures["action"] = get_peft_model(action_mixture, peft_config)
+                logger.info(f"Applied LoRA to action mixture with r={lora_r}, alpha={lora_alpha}")
+        
+        # Note: Vision tower and projector are typically frozen, but we can apply LoRA if needed
+        if apply_to_vision and hasattr(base_model, 'vision_tower'):
+            logger.warning("LoRA for vision tower is not yet fully supported in this implementation")
+        
+        if apply_to_projector and hasattr(base_model, 'multi_modal_projector'):
+            logger.warning("LoRA for projector is not yet fully supported in this implementation")
+        
+        # Print trainable parameters
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        total_params = sum(p.numel() for p in model.parameters())
+        logger.info(f"Trainable parameters: {trainable_params:,} ({100 * trainable_params / total_params:.2f}%)")
+        logger.info(f"Total parameters: {total_params:,}")
 
     if cfg.model.model_weights_to_bf16:
         model = model.to(torch.bfloat16)
