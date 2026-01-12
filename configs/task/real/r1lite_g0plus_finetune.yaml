@@ -40,5 +40,5 @@ data:
 logger:
   workspace: Oshwiciqwq
 
-batch_size_val: 16
+batch_size_val: 1
 eval_steps: 1000

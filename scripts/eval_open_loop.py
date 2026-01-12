@@ -279,9 +279,6 @@ def main(cfg: DictConfig) -> Optional[float]:
     processor.set_normalizer_from_stats(dataset_stats)
     dataset_val.set_processor(processor)
     
-    episode_from = dataset_val.episode_data_index["from"]
-    episode_to = dataset_val.episode_data_index["to"]
-    num_episodes = len(episode_from)
 
     actions, gt_actions = sample_trajectory(cfg, model, dataloader, processor, max_len=cfg.eval_steps)
     plot_open_ring(
