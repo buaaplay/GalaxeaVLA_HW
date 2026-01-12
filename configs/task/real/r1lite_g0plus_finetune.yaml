@@ -7,7 +7,8 @@ defaults:
 model:
   pretrained_ckpt: /root/ckpts/G0Plus_3B_base/checkpoints/model_state_dict.pt
   batch_size: 1
-  max_steps: 40000
+  grad_accumulation_steps: 1
+  max_steps: 30000
   max_epochs: null
   # LoRA configuration (uncomment to enable LoRA fine-tuning)
   use_lora: True
@@ -38,3 +39,6 @@ data:
 
 logger:
   workspace: Oshwiciqwq
+
+batch_size_val: 16
+eval_steps: 1000

@@ -258,7 +258,6 @@ def finetune(cfg: DictConfig):
         for name, param in base_model.multi_modal_projector.named_parameters():
             param.requires_grad = False
         
-        # import ipdb;ipdb.set_trace()
         if apply_to_vlm and hasattr(base_model, 'joint_model') and hasattr(base_model.joint_model, 'mixtures'):
             # Apply LoRA to VLM (language model) part
             if "vlm" in base_model.joint_model.mixtures:
@@ -452,6 +451,7 @@ def finetune(cfg: DictConfig):
     mfu_tracker = None
     if accelerator.is_main_process:
         effective_batch_size = cfg.model.batch_size * cfg.model.grad_accumulation_steps * dist.get_world_size()
+        logger.info(f"Effective batch size: {effective_batch_size}")
         if skip_mfu_tracker:
             logger.info("Skipping MFU tracker for DiffusionUnetImagePolicy (FDP) since MFU estimation is not supported.")
         else:
@@ -574,7 +574,7 @@ def finetune(cfg: DictConfig):
             ema_model=ema_model if use_ema else None
         )
         
-        last_pt_path = output_dir / "last.pt"
+        last_pt_path = output_dir / "checkpoints" / "last.pt"
         if last_pt_path.exists():
             last_pt_path.unlink()
         last_pt_path.symlink_to(checkpoint_path.name)
