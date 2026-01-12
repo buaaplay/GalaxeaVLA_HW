@@ -16,8 +16,6 @@ lora:
   bias: "none"  # LoRA bias: "none", "all", or "lora_only"
   target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]  # Target modules for LoRA
   apply_to_vlm: True  # Apply LoRA to VLM (language model) mixture
-  apply_to_vision: False  # Apply LoRA to vision tower (not fully supported yet)
-  apply_to_projector: False  # Apply LoRA to projector (not fully supported yet)
   apply_to_action: False  # Apply LoRA to action expert mixture
 
 # dataloader

@@ -7,21 +7,29 @@ defaults:
 model:
   pretrained_ckpt: /root/ckpts/G0Plus_3B_base/checkpoints/model_state_dict.pt
   batch_size: 1
+  max_steps: 40000
+  max_epochs: null
   # LoRA configuration (uncomment to enable LoRA fine-tuning)
-  # use_lora: True
-  # lora:
-  #   r: 8
-  #   alpha: 16
-  #   dropout: 0.1
-  #   bias: "none"
-  #   target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
-  #   apply_to_vlm: True
-  #   apply_to_action: False
+  use_lora: True
+  find_unused_parameters: True
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.1
+    bias: "none"
+    target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+    apply_to_vlm: True
+    apply_to_action: True
   model_arch:
     pretrained_model_path: /root/ckpts/paligemma-3b-pt-224
+    action_dim: 14
+    proprio_dim: 14
   processor:
     tokenizer_params: 
       pretrained_model_name_or_path: /root/ckpts/paligemma-3b-pt-224
+    action_state_transforms: 
+      - _target_: galaxea_fm.transforms.relative_action.RelativeJointTransform
+        keys: [left_arm, right_arm]
 
 data:
   dataset_dirs: 
