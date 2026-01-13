@@ -36,6 +36,7 @@ from typing import List, Optional
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from accelerate.logging import get_logger
 from omegaconf import OmegaConf
@@ -282,6 +283,7 @@ class JointModel(nn.Module):
         self.config = config
         self.num_hidden_layers = config.num_hidden_layers
         self.num_mixture = len(config.mixture)
+        self.gradient_checkpointing = bool(config.get("gradient_checkpointing", False))
         self.cache_names = [
             name for name in config.mixture if config.mixture[name].cache
         ]  # name of the mixtures that use cache during generation; no cache during training
@@ -342,16 +344,52 @@ class JointModel(nn.Module):
         intermediates = {k: [embeds_all[k]] for k in embeds_all.keys()}
         # layers
         for layer_idx in range(self.num_hidden_layers):
-            embeds_all = forward_mixture_layers(
-                self.mixtures,
-                attention_mask,
-                position_ids_all,
-                embeds_all,
-                layer_idx=layer_idx,
-                time_cond=time_cond,
-                kv_caches=kv_caches,
-                cache_mode=cache_mode,
-            )
+            # Disable gradient checkpointing during inference or when using KV caches
+            # KV cache mechanism is incompatible with gradient checkpointing
+            use_checkpoint = self.gradient_checkpointing and self.training and len(kv_caches) == 0
+            if use_checkpoint:
+                # CRITICAL FIX: Use a factory function to capture layer_idx correctly
+                # Python closures use late binding, so we need to capture layer_idx 
+                # at the time of function creation, not at call time
+                def create_forward_fn(layer_idx_val):
+                    def _layer_forward(*flat_embeds):
+                        embeds_dict = {
+                            name: tensor for name, tensor in zip(active_mixture_names, flat_embeds)
+                        }
+                        outputs = forward_mixture_layers(
+                            self.mixtures,
+                            attention_mask,
+                            position_ids_all,
+                            embeds_dict,
+                            layer_idx=layer_idx_val,  # Use captured value, not loop variable
+                            time_cond=time_cond,
+                            kv_caches=kv_caches,
+                            cache_mode=cache_mode,
+                        )
+                        return tuple(outputs[name] for name in active_mixture_names)
+                    return _layer_forward
+
+                flat_inputs = tuple(embeds_all[name] for name in active_mixture_names)
+                forward_fn = create_forward_fn(layer_idx)
+                flat_outputs = checkpoint(forward_fn, *flat_inputs, use_reentrant=False)
+                
+                # checkpoint returns Tensor for single output, tuple otherwise
+                if len(active_mixture_names) == 1:
+                    flat_outputs = (flat_outputs,)
+                embeds_all = {
+                    name: flat_outputs[idx] for idx, name in enumerate(active_mixture_names)
+                }
+            else:
+                embeds_all = forward_mixture_layers(
+                    self.mixtures,
+                    attention_mask,
+                    position_ids_all,
+                    embeds_all,
+                    layer_idx=layer_idx,
+                    time_cond=time_cond,
+                    kv_caches=kv_caches,
+                    cache_mode=cache_mode,
+                )
             for k in embeds_all.keys():
                 intermediates[k].append(embeds_all[k])
 

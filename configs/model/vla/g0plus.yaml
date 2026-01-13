@@ -186,6 +186,7 @@ model_arch:
     
   joint:
     name: galaxea_fm.models.galaxea_zero.joint_model.JointModel
+    gradient_checkpointing: False  # Enable to save memory at cost of extra compute
     action_expert_adaptive_mode: null
     mixture:
       vlm:   # gemma

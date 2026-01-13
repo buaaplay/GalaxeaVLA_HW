@@ -6,7 +6,7 @@ defaults:
 
 model:
   pretrained_ckpt: /root/ckpts/G0Plus_3B_base/checkpoints/model_state_dict.pt
-  batch_size: 1
+  batch_size: 8
   grad_accumulation_steps: 1
   max_steps: 30000
   max_epochs: null
@@ -22,6 +22,8 @@ model:
     apply_to_vlm: True
     apply_to_action: True
   model_arch:
+    joint:
+      gradient_checkpointing: True  # Enable to save memory at cost of extra compute
     pretrained_model_path: /root/ckpts/paligemma-3b-pt-224
     action_dim: 14
     proprio_dim: 14
@@ -42,3 +44,5 @@ logger:
 
 batch_size_val: 1
 eval_steps: 1000
+
+checkpointing_steps: 5000
