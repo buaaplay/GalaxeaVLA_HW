@@ -9,6 +9,7 @@ export HYDRA_FULL_ERROR=1
 export OC_CAUSE=1
 export HF_HUB_OFFLINE=0
 export TOKENIZERS_PARALLELISM=false
+export CUDA_VISIBLE_DEVICES=1
 
 config=$1
 ckpt_path=$2
