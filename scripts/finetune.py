@@ -190,6 +190,18 @@ def finetune(cfg: DictConfig):
     torch.cuda.set_device(device_id := accelerator.local_process_index)
     torch.cuda.empty_cache()
     
+    # Synchronize output directory across all processes to avoid multiple Hydra output dirs
+    # Rank 0's output_dir will be broadcast to all other ranks
+    if accelerator.num_processes > 1:
+        output_dir_list = [str(Path(cfg.output_dir).resolve())]
+        dist.broadcast_object_list(output_dir_list, src=0)
+        output_dir = Path(output_dir_list[0])
+        # Update cfg.output_dir for non-main processes
+        if not accelerator.is_main_process:
+            OmegaConf.update(cfg, "output_dir", str(output_dir), merge=False)
+    else:
+        output_dir = Path(cfg.output_dir)
+    
     # Log AMP configuration for verification
     if accelerator.is_main_process:
         logger.info("=" * 60)
@@ -202,7 +214,6 @@ def finetune(cfg: DictConfig):
         logger.info("=" * 60)
 
     OmegaConf.resolve(cfg)
-    output_dir = Path(cfg.output_dir)
 
     is_use_edp = False
     if accelerator.is_main_process:
@@ -339,7 +350,8 @@ def finetune(cfg: DictConfig):
     else:
         checkpoint_path = Path(cfg.resume_ckpt if cfg.resume_ckpt else cfg.model.pretrained_ckpt)
         dataset_stats = load_dataset_stats_from_json(checkpoint_path.parent.parent / "dataset_stats.json")
-        save_dataset_stats_to_json(dataset_stats, output_dir / "dataset_stats.json")
+        if accelerator.is_main_process:
+            save_dataset_stats_to_json(dataset_stats, output_dir / "dataset_stats.json")
 
     train_processor.set_normalizer_from_stats(dataset_stats)
     eval_processor.set_normalizer_from_stats(dataset_stats)
