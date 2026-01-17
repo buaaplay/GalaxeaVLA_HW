@@ -332,6 +332,8 @@ def finetune(cfg: DictConfig):
     # Initialize experiment tracker
     tracker_type = init_experiment_tracker(cfg, accelerator, output_dir)
 
+    logger.info(f"Datasets: {cfg.data.dataset_dirs}")
+
     train_dataset: BaseLerobotDataset = instantiate(cfg.data, is_training_set=True)
     eval_dataset: BaseLerobotDataset = instantiate(cfg.data, is_training_set=False)
     train_processor: BaseProcessor = instantiate(cfg.model.processor)

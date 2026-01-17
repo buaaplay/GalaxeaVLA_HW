@@ -7,6 +7,7 @@ defaults:
 model:
   pretrained_ckpt: /root/ckpts/G0Plus_3B_base/checkpoints/model_state_dict.pt
   batch_size: 8
+  num_workers: 4
   grad_accumulation_steps: 1
   max_steps: 30000
   max_epochs: null
@@ -14,8 +15,8 @@ model:
   use_lora: True
   find_unused_parameters: True
   lora:
-    r: 8
-    alpha: 16
+    r: 16
+    alpha: 32
     dropout: 0.1
     bias: "none"
     target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
@@ -36,8 +37,10 @@ model:
 
 data:
   dataset_dirs: 
-    - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items16_Evenly_Distributed_Round_13_20251022_018
-    - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items57_Evenly_Distributed_Round_13_20251024_018
+    - /data/galaxa_openworld/Arrange_Mineral_Water_Bottles_On_The_Desk_20250721_008
+    # - /data/galaxa_openworld/Organize_Mineral_Water_Bottles_0n_The_Table_20250709_006 
+    # - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items16_Evenly_Distributed_Round_13_20251022_018
+    # - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items57_Evenly_Distributed_Round_13_20251024_018
 
 logger:
   workspace: Oshwiciqwq
