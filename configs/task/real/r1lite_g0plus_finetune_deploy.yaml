@@ -1,0 +1,22 @@
+# @package _global_
+
+defaults:
+  - real/r1lite_g0plus_finetune
+  - _self_
+
+logger:
+  type: null
+
+model:
+  model_arch:
+    pretrained_model_path: /home/user/hw_project/GalaxeaVLA/models/paligemma-3b-pt-224
+  processor:
+    tokenizer_params: 
+      pretrained_model_name_or_path: /home/user/hw_project/GalaxeaVLA/models/paligemma-3b-pt-224
+
+deploy:
+  host: 192.168.12.12
+  port: 8000
+  loop_interval: 2
+  prompt: hello
+  deploy_dir: work_dirs/deploy
