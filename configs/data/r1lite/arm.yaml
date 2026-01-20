@@ -38,10 +38,10 @@ shape_meta:
       raw_shape: [3, 720, 1280]
       shape: [3, 224, 224]
     - key: left_wrist_rgb
-      raw_shape: [3, 720, 1280]
+      raw_shape: [3, 360, 640]
       shape: [3, 224, 224]
     - key: right_wrist_rgb
-      raw_shape: [3, 720, 1280]
+      raw_shape: [3, 360, 640]
       shape: [3, 224, 224]
 
 # action configuration

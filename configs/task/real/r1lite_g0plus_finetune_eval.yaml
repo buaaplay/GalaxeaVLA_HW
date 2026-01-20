@@ -1,0 +1,8 @@
+# @package _global_
+
+defaults:
+  - real/r1lite_g0plus_finetune
+  - _self_
+
+data:
+  val_set_proportion: 1.00

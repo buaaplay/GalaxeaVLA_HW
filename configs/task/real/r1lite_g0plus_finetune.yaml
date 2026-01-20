@@ -36,8 +36,10 @@ model:
         keys: [left_arm, right_arm]
 
 data:
+  val_set_proportion: 0.00
   dataset_dirs: 
-    - /data/galaxa_openworld/Arrange_Mineral_Water_Bottles_On_The_Desk_20250721_008
+    - /root/data_convert/data/lerobot/20260119_hdf5
+    # - /data/galaxa_openworld/Arrange_Mineral_Water_Bottles_On_The_Desk_20250721_008
     # - /data/galaxa_openworld/Organize_Mineral_Water_Bottles_0n_The_Table_20250709_006 
     # - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items16_Evenly_Distributed_Round_13_20251022_018
     # - /root/data/G0Plus_Finetune_LeRobot_Datasets_Demo/BENCH_Pick_And_Place_20_Items57_Evenly_Distributed_Round_13_20251024_018
