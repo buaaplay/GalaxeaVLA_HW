@@ -17,6 +17,7 @@ model:
 deploy:
   host: 192.168.12.12
   port: 8000
-  loop_interval: 2
-  prompt: hello
+  loop_interval: 0.0
+  use_chunk: 10
+  prompt: Pick up the rubbish on the table and throw it into the bin.
   deploy_dir: work_dirs/deploy

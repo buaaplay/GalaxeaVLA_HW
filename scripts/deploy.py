@@ -121,7 +121,13 @@ def infer(model, processor, inputs):
         batch = model.predict_action(batch)
 
     batch = dict_apply(batch, lambda x: x.cpu() if isinstance(x, torch.Tensor) else x)
+
+    # print(batch['action'][0][:, 7:13])
     batch = processor.postprocess(batch)
+    # print('*'*50)
+    # print(batch['action']['right_arm'][0])
+    # import ipdb;ipdb.set_trace()
+
     res = {}
     for key, value in batch['action'].items():
         res[key] = value.squeeze(0).numpy()
@@ -309,12 +315,12 @@ def main(cfg: DictConfig) -> Optional[float]:
                     },
                     "prompt": cfg.deploy.prompt if cfg.deploy.prompt else "",
                 }
-                actions_map = infer(policy, processor, pi0_inputs)
             except Exception as e:
                 print(f"Policy inference exception: {e}")
                 time.sleep(cfg.deploy.loop_interval)
                 continue
 
+            actions_map = infer(policy, processor, pi0_inputs)
             base_action = [
                 data['qpos_arm_left'] + data['qpos_arm_right'] +
                 data['qpos_torso'][:3] + [0.0] + [0.0] + [0.0, 0.0, 0.0]
@@ -324,6 +330,7 @@ def main(cfg: DictConfig) -> Optional[float]:
             actions[:, 15:16] = actions_map["left_gripper"] #* 10
             actions[:, 6:12] = actions_map["right_arm"] #* 0
             actions[:, 16:17] = actions_map["right_gripper"] #* 10
+            actions = actions[:cfg.deploy.use_chunk, :]
             actions = actions.tolist()
 
             try:
