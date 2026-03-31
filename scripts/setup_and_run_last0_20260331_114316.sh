@@ -15,11 +15,11 @@
 set -euo pipefail
 
 # ── 路径配置（按实际情况修改）────────────────────────────────────────────────
-GITHUB_REPO_URL="https://github.com/<your-username>/GalaxeaVLA.git"
-GALAXEA_DIR="/home/robot/GalaxeaVLA"
-LAST0_ROOT="/home/robot/last0"                  # last0 源码根目录
+GITHUB_REPO_URL="https://github.com/buaaplay/GalaxeaVLA_HW.git"
+GALAXEA_DIR="/home/robot/project/GalaxeaVLA_HW"
+LAST0_ROOT="${GALAXEA_DIR}/last0"               # last0 源码根目录（在 GalaxeaVLA 下）
 CKPT_DIR="/home/robot/weights/MyData_finetune_last0_checkpoint-13-171570"
-CONDA_ENV="base"                                 # 改成你的 conda env 名
+CONDA_ENV="last0"                                # conda env 名
 
 # ── 1. clone（已存在则 pull）─────────────────────────────────────────────────
 if [ -d "$GALAXEA_DIR/.git" ]; then
