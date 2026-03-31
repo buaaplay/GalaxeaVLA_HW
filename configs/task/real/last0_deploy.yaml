@@ -1,0 +1,29 @@
+# @package _global_
+# Deploy config for LaST0 finetuned checkpoint on Galaxea R1-Lite
+# Usage:
+#   python scripts/deploy_last0.py --config-name last0_deploy \
+#       last0.model_dir=/home/robot/weights/MyData_finetune_last0_checkpoint-13-171570/tfmr \
+#       last0.stats_path=/home/robot/weights/MyData_finetune_last0_checkpoint-13-171570/stats_data.json
+
+last0:
+  # Path to the tfmr/ directory saved by LaST0 train.py
+  model_dir: /home/robot/weights/MyData_finetune_last0_checkpoint-13-171570/tfmr
+  # Path to stats_data.json (sibling of tfmr/)
+  stats_path: /home/robot/weights/MyData_finetune_last0_checkpoint-13-171570/stats_data.json
+
+  # Must match training args
+  action_dim: 14          # dual-arm: 14
+  action_chunk: 16        # chunk length used at training
+  latent_size: 4          # --latent_size in train.py
+  use_latent: true        # --use_latent in train.py
+  use_proprio: false      # set true if state was fed to model during training
+
+  cuda: 0
+
+deploy:
+  host: 192.168.12.12
+  port: 8000
+  loop_interval: 0.0
+  use_chunk: 8            # how many steps of the chunk to actually execute
+  prompt: "Pick up the rubbish on the table and throw it into the bin."
+  deploy_dir: work_dirs/deploy_last0
