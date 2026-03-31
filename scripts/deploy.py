@@ -330,6 +330,11 @@ def main(cfg: DictConfig) -> Optional[float]:
             actions[:, 15:16] = actions_map["left_gripper"] #* 10
             actions[:, 6:12] = actions_map["right_arm"] #* 0
             actions[:, 16:17] = actions_map["right_gripper"] #* 10
+
+            binary_map = lambda x: np.where(x < 70, 0, 1) * x
+            actions[:, 15] = binary_map(actions[:, 15])
+            actions[:, 16] = binary_map(actions[:, 16])
+
             actions = actions[:cfg.deploy.use_chunk, :]
             actions = actions.tolist()
 
