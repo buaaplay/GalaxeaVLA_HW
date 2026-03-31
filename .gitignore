@@ -2,4 +2,8 @@
 *.egg-info/
 **.log
 models/
+!last0/janus/models/
+!last0/janus/models/**
+!last0/janus/janusflow/models/
+!last0/janus/janusflow/models/**
 work_dirs/
