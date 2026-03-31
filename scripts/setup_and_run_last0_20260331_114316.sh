@@ -39,7 +39,7 @@ conda activate "$CONDA_ENV"
 echo "    Python: $(which python)  ($(python --version 2>&1))"
 
 echo "[2/3] Setting PYTHONPATH"
-export PYTHONPATH="$LAST0_ROOT:$LAST0_ROOT/janus:${PYTHONPATH:-}"
+export PYTHONPATH="$LAST0_ROOT:${PYTHONPATH:-}"
 echo "    PYTHONPATH=$PYTHONPATH"
 
 echo "[3/3] Launching deploy_last0.py"

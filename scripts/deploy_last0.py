@@ -68,6 +68,7 @@ from scipy.spatial.transform import Rotation as R
 # ── LaST0 imports (repo must be on PYTHONPATH) ──────────────────────────────
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))           # GalaxeaVLA_HW root
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "last0"))  # last0 inside GalaxeaVLA_HW
+# janus is a subpackage of last0, do NOT add last0/janus to sys.path
 
 from transformers import AutoModelForCausalLM
 from janus.models import VLChatProcessor, ActionTokenizer
