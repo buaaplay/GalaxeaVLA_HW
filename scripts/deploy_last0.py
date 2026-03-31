@@ -243,11 +243,38 @@ def build_wide_action_chunk(
 def main(cfg: DictConfig) -> None:
     os.makedirs(cfg.deploy.deploy_dir, exist_ok=True)
 
+    logger.info("=" * 60)
+    logger.info("deploy_last0.py  START")
+    logger.info(f"  model_dir  : {cfg.last0.model_dir}")
+    logger.info(f"  stats_path : {cfg.last0.stats_path}")
+    logger.info(f"  robot      : {cfg.deploy.host}:{cfg.deploy.port}")
+    logger.info(f"  use_chunk  : {cfg.deploy.use_chunk}")
+    logger.info(f"  prompt     : {cfg.deploy.prompt}")
+    logger.info("=" * 60)
+
+    # ── check paths ───────────────────────────────────────────────────────────
+    if not Path(cfg.last0.model_dir).exists():
+        logger.error(f"[FATAL] model_dir not found: {cfg.last0.model_dir}")
+        sys.exit(1)
+    if not Path(cfg.last0.stats_path).exists():
+        logger.error(f"[FATAL] stats_path not found: {cfg.last0.stats_path}")
+        sys.exit(1)
+    logger.info("[OK] checkpoint paths exist")
+
+    # ── check CUDA ────────────────────────────────────────────────────────────
+    if not torch.cuda.is_available():
+        logger.error("[FATAL] No CUDA device found")
+        sys.exit(1)
+    logger.info(f"[OK] CUDA available: {torch.cuda.get_device_name(cfg.last0.cuda)}")
+
     # ── load model ────────────────────────────────────────────────────────────
-    logger.info(f"Loading LaST0 model from {cfg.last0.model_dir}")
+    logger.info("Loading VLChatProcessor ... (may take 10-30s)")
     vl_chat_processor = VLChatProcessor.from_pretrained(
         cfg.last0.model_dir, trust_remote_code=True
     )
+    logger.info("[OK] VLChatProcessor loaded")
+
+    logger.info("Loading LaST0 model weights ... (may take 30-120s)")
     vl_gpt = AutoModelForCausalLM.from_pretrained(
         cfg.last0.model_dir,
         trust_remote_code=True,
@@ -260,12 +287,15 @@ def main(cfg: DictConfig) -> None:
         ignore_mismatched_sizes=True,
     )
     device = f"cuda:{cfg.last0.cuda}"
+    logger.info(f"Moving model to {device} ...")
     vl_gpt = vl_gpt.to(device).eval()
+    logger.info(f"[OK] Model on {device}")
 
     action_tokenizer = ActionTokenizer(vl_chat_processor.tokenizer, need_to_sub=3)
 
     logger.info(f"Loading stats from {cfg.last0.stats_path}")
     statistic = load_stats(cfg.last0.stats_path)
+    logger.info(f"[OK] Stats loaded  action_dim={statistic['action_min'].shape}")
 
     # ── build a minimal cfg-like object for get_action() ─────────────────────
     @dataclass
@@ -282,13 +312,15 @@ def main(cfg: DictConfig) -> None:
     session = requests.Session()
     session.trust_env = False
 
-    logger.info(
-        f"Starting deploy loop → {cfg.deploy.host}:{cfg.deploy.port}  "
-        f"use_chunk={cfg.deploy.use_chunk}"
-    )
-    logger.info("Press Ctrl+C to stop")
+    logger.info("=" * 60)
+    logger.info("All models loaded. Starting deploy loop.")
+    logger.info(f"  target: http://{cfg.deploy.host}:{cfg.deploy.port}")
+    logger.info("  Make sure the robot HTTP server is running!")
+    logger.info("  Press Ctrl+C to stop")
+    logger.info("=" * 60)
 
     data = None
+    _conn_fail_count = 0
     try:
         while True:
             t0 = time.time()
@@ -300,18 +332,25 @@ def main(cfg: DictConfig) -> None:
                     timeout=2,
                 )
             except requests.exceptions.RequestException as e:
-                logger.warning(f"get_state failed: {e}")
+                _conn_fail_count += 1
+                logger.warning(
+                    f"[{_conn_fail_count}] get_state failed: {e}  "
+                    f"(target: http://{cfg.deploy.host}:{cfg.deploy.port}/get_state)"
+                )
+                if _conn_fail_count == 1:
+                    logger.warning("  -> Is the robot server started? Check IP/port.")
                 time.sleep(cfg.deploy.loop_interval)
                 continue
 
             if resp.status_code != 200:
-                logger.warning(f"get_state HTTP {resp.status_code}")
+                logger.warning(f"get_state HTTP {resp.status_code}  body={resp.text[:200]}")
                 time.sleep(cfg.deploy.loop_interval)
                 continue
 
+            _conn_fail_count = 0
             data = resp.json()
             latency_ms = (time.time() - t0) * 1000
-            logger.info(f"get_state OK  latency={latency_ms:.1f}ms")
+            logger.info(f"get_state OK  latency={latency_ms:.1f}ms  keys={list(data.keys())}")
 
             # ── 2. decode images ──────────────────────────────────────────────
             try:

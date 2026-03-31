@@ -15,30 +15,20 @@
 set -euo pipefail
 
 # ── 路径配置（按实际情况修改）────────────────────────────────────────────────
-GITHUB_REPO_URL="https://github.com/buaaplay/GalaxeaVLA_HW.git"
 GALAXEA_DIR="/home/robot/project/GalaxeaVLA_HW"
 LAST0_ROOT="${GALAXEA_DIR}/last0"               # last0 源码根目录（在 GalaxeaVLA 下）
 CKPT_DIR="/home/robot/weights/MyData_finetune_last0_checkpoint-13-171570"
 CONDA_ENV="last0"                                # conda env 名
 
-# ── 1. clone（已存在则 pull）─────────────────────────────────────────────────
-if [ -d "$GALAXEA_DIR/.git" ]; then
-    echo "[INFO] Repo exists, pulling latest..."
-    git -C "$GALAXEA_DIR" pull origin main
-else
-    echo "[INFO] Cloning from GitHub..."
-    git clone "$GITHUB_REPO_URL" "$GALAXEA_DIR"
-fi
-
-# ── 2. 激活 conda 环境 ────────────────────────────────────────────────────────
+# ── 1. 激活 conda 环境 ────────────────────────────────────────────────────────
 # shellcheck disable=SC1090
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV"
 
-# ── 3. 设置 PYTHONPATH（让 deploy_last0.py 能 import janus / experiments）────
+# ── 2. 设置 PYTHONPATH（让 deploy_last0.py 能 import janus / experiments）────
 export PYTHONPATH="$LAST0_ROOT:$LAST0_ROOT/janus:${PYTHONPATH:-}"
 
-# ── 4. 启动 deploy ────────────────────────────────────────────────────────────
+# ── 3. 启动 deploy ────────────────────────────────────────────────────────────
 cd "$GALAXEA_DIR"
 
 python scripts/deploy_last0.py \
