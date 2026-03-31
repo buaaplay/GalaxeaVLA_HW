@@ -16,19 +16,35 @@ set -euo pipefail
 
 # ── 路径配置（按实际情况修改）────────────────────────────────────────────────
 GALAXEA_DIR="/home/robot/project/GalaxeaVLA_HW"
-LAST0_ROOT="${GALAXEA_DIR}/last0"               # last0 源码根目录（在 GalaxeaVLA 下）
+LAST0_ROOT="${GALAXEA_DIR}/last0"
 CKPT_DIR="/home/robot/weights/MyData_finetune_last0_checkpoint-13-171570"
-CONDA_ENV="last0"                                # conda env 名
+CONDA_ENV="last0"
 
-# ── 1. 激活 conda 环境 ────────────────────────────────────────────────────────
+echo "[1/3] Activating conda env: $CONDA_ENV"
+# 硬编码 conda 路径，避免 conda info --base 在非交互式 shell 卡住
+CONDA_BASE="${CONDA_PREFIX_1:-${CONDA_PREFIX:-/home/robot/miniconda3}}"
+if [ ! -f "$CONDA_BASE/etc/profile.d/conda.sh" ]; then
+    # 尝试常见路径
+    for p in /home/robot/anaconda3 /opt/conda /usr/local/miniconda3 /home/robot/miniforge3; do
+        if [ -f "$p/etc/profile.d/conda.sh" ]; then
+            CONDA_BASE="$p"
+            break
+        fi
+    done
+fi
+echo "    conda base: $CONDA_BASE"
 # shellcheck disable=SC1090
-source "$(conda info --base)/etc/profile.d/conda.sh"
+source "$CONDA_BASE/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV"
+echo "    Python: $(which python)  ($(python --version 2>&1))"
 
-# ── 2. 设置 PYTHONPATH（让 deploy_last0.py 能 import janus / experiments）────
+echo "[2/3] Setting PYTHONPATH"
 export PYTHONPATH="$LAST0_ROOT:$LAST0_ROOT/janus:${PYTHONPATH:-}"
+echo "    PYTHONPATH=$PYTHONPATH"
 
-# ── 3. 启动 deploy ────────────────────────────────────────────────────────────
+echo "[3/3] Launching deploy_last0.py"
+echo "    GALAXEA_DIR : $GALAXEA_DIR"
+echo "    CKPT_DIR    : $CKPT_DIR"
 cd "$GALAXEA_DIR"
 
 python scripts/deploy_last0.py \
